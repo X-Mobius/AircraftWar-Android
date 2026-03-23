@@ -1,3 +1,7 @@
 <resources>
     <string name="app_name">AircraftWar</string>
+    <string name="difficulty_title">请选择游戏难度</string>
+    <string name="difficulty_easy">简单</string>
+    <string name="difficulty_medium">普通</string>
+    <string name="difficulty_hard">困难</string>
 </resources>

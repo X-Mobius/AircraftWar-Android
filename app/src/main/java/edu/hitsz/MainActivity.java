@@ -1,35 +1,25 @@
 package edu.hitsz;
 
+import android.content.Intent;
 import android.os.Bundle;
-import android.view.ViewGroup;
-import android.widget.FrameLayout;
 
-import androidx.activity.EdgeToEdge;
 import androidx.appcompat.app.AppCompatActivity;
 
-import edu.hitsz.application.AbstractGame;
-import edu.hitsz.application.ImageManager;
-import edu.hitsz.application.Main;
-
 public class MainActivity extends AppCompatActivity {
-
-    private AbstractGame gameView;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
-        EdgeToEdge.enable(this);
+        setContentView(R.layout.activity_main);
 
-        // Image resources must be initialized before creating game objects.
-        ImageManager.init(getApplicationContext());
+        findViewById(R.id.btn_easy).setOnClickListener(v -> startGame("easy"));
+        findViewById(R.id.btn_medium).setOnClickListener(v -> startGame("medium"));
+        findViewById(R.id.btn_hard).setOnClickListener(v -> startGame("hard"));
+    }
 
-        // Keep difficulty selection centralized in Main factory.
-        gameView = Main.createGame(this, "easy");
-        FrameLayout root = new FrameLayout(this);
-        root.addView(gameView, new FrameLayout.LayoutParams(
-                ViewGroup.LayoutParams.MATCH_PARENT,
-                ViewGroup.LayoutParams.MATCH_PARENT
-        ));
-        setContentView(root);
+    private void startGame(String difficulty) {
+        Intent intent = new Intent(this, GameActivity.class);
+        intent.putExtra(GameActivity.EXTRA_DIFFICULTY, difficulty);
+        startActivity(intent);
     }
 }

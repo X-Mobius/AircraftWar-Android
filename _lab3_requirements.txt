@@ -1,0 +1,92 @@
+软件构造实践
+
+  实验三
+
+
+   2026春
+
+哈尔滨工业大学（深圳）
+实验目的
+
+•   掌握Android页面开发的方法
+
+•   掌握基于监听的事件处理机制
+
+•   掌握使用Intent进行页面切换及数据传递的方法
+实验内容
+
+1. 开发难度选择页面
+
+2. 根据用户选择的难度跳转到对应的游戏场景
+页面开发
+➢ 布局元素
+
+
+
+
+View: 用户可见，可与用户交互。如Button、TextView等
+
+ViewGroup: 不可见的容器，用于定义View和其他ViewGroup对象
+的布局结构，如LinearLayout、ConstraintLayout等
+页面开发
+
+➢ 布局容器
+页面开发
+
+➢ 布局参数
+Android布局容器拥有各自的布局参数LayoutParams，子视图只
+有使用与父容器匹配的参数类才能被正确识别。参数内封装宽高、
+边距及容器特有字段，描述子视图在父容器中的尺寸与位置。
+LayoutParams的作用：
+
+   onMeasure()
+   Android系统根据容器布局规则和布局参数，计算出子视图的实际尺寸。
+
+   onLayout()
+   Android系统根据容器布局规则和布局参数，确定子视图的具体坐标。
+页面开发
+➢ 布局声明
+
+ 在XML中声明布局元素（静态布局）
+  将界面中布局的代码和Java代码隔离
+  XML文件存放在res/layout/目录下
+
+
+ 在运行时实例化布局元素（动态布局）
+  使用Java代码动态添加布局元素
+     页面开发
+      ➢ 布局声明
+                            在XML中声明布局元素
+
+1                                  2
+
+
+
+
+                                             MainActivity.java
+
+
+
+                                       Activity 启 动 时 ， Android 系 统 调 用
+                                       onCreate() 回 调 方 法 ， 通 过 调 用
+                                       setContentView()方法加载布局资源。
+    res/layout/activity_main.xml
+页面开发
+➢ 布局声明
+         在运行时实例化布局元素
+                   MainActivity.java
+页面跳转
+
+
+
+
+1. Activity A创建Intent, 指定要启动的Activity名字---ActivityB，
+   如需传递数据可调用Intent对象的putExtra()方法；
+
+2. Activity A调用startActivity()方法，将intent作为参数传入；
+
+3. Android系统自动调用Activity B的onCreate()方法，以此启
+   动新的Activity。
+  同学们
+请开始实验吧！
+
