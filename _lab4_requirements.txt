@@ -1,0 +1,80 @@
+软件构造实践
+
+  实验四
+
+
+   2026春
+
+哈尔滨工业大学（深圳）
+实验目的
+
+• 掌握Android音频播放API的使用，理解不同API
+ 的适配场景
+
+• 开发低耦合、资源安全的独立音频管理类，培养
+ 工程化编码思维
+实验内容
+
+1. 添加音乐开关
+
+2. 实现游戏中的音乐音效播放
+ MediaPlayer
+➢ MediaPlayer是Android系统核心音频播放类，支持MP3、WAV多种音
+ 频格式，适用于背景音乐等长时间播放的音频。
+
+                •   setDataSource(): 加载音频源
+                •   prepare(): 同步准备音频，主线程调用，适用于本
+                    地小音频
+                •   prepareAsync() + setOnPreparedListener() : 异
+                    步加载网络文件或者本地大文件，避免主线程卡顿
+                •   start(): 启动播放；
+                •   pause(): 暂停播放，可调用start()直接恢复播放
+                •   stop(): 停止播放，停止后不能直接start()，必须重
+                    新准备
+                •   release(): 彻底释放资源
+                •   reset(): 重置 MediaPlayer 到 Idle 态，清空音频源
+                    和状态，此时可加载新音频源
+
+
+
+                播放本地资源小文件时，直接使用create静态方法将构造 、
+                setDataSource 、 prepare三步合并，直接返回可播放实例
+SoundPool
+➢ SoundPool是Android平台专为短音效播放设计的音频组件，适
+ 配游戏等高频播放场景。
+                创建对象: SoundPool.Builder
+
+ 预加载解码，延迟低     通过链式调用设置音频流类型、最大并发播放数等参数。
+                 SoundPool soundPool = new SoundPool.Builder()
+
+ 支持并发播放                          .setAudioAttributes(audioAttributes)
+                                  .setMaxStreams(3)
+                                 .build();
+ 提供精细播放控制
+
+                加载音频: load()
+                从res/raw、文件描述符或外部路径导入音频，返回全局唯
+                一的soundId。
+                 int soundId = soundPool.load(context, R.raw.click, 1);
+
+
+
+                控制播放: play()
+                传入soundId、音量、优先级等参数，返回streamId用于
+                中途控制。
+                 int streamId = soundPool.play(soundId, 1.0f, 1.0f, 1, 0, 1.0f);
+音频管理类
+
+封装音频管理类
+  MediaPlayer: 播放游戏BGM和Boss机BGM
+  SoundPool：播放子弹击中、炸弹爆炸等音效
+
+
+优点：
+  音频逻辑与Activity解耦，代码结构清晰
+  符合单一职责原则，便于单元测试
+  资源统一管理
+  后续扩展更灵活
+  同学们
+请开始实验吧！
+

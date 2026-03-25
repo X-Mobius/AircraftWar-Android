@@ -1,0 +1,12 @@
+Put game audio files in this folder with the following names:
+
+bgm.wav
+bgm_boss.wav
+bullet_hit.wav
+bomb_explosion.wav
+get_supply.wav
+game_over.wav
+
+SoundManager resolves old Windows paths like:
+src/videos/bullet_hit.wav
+to this Android raw resource by file base name.

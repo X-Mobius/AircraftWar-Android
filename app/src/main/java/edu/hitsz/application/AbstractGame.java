@@ -163,6 +163,7 @@ public abstract class AbstractGame extends SurfaceView
 
     @Override
     public void surfaceCreated(SurfaceHolder holder) {
+        SoundManager.playBgm();
         startDrawThreadIfNeeded();
     }
 
@@ -191,6 +192,7 @@ public abstract class AbstractGame extends SurfaceView
 
     @Override
     public void surfaceDestroyed(SurfaceHolder holder) {
+        SoundManager.stopBgm();
         stopDrawThread();
     }
 
