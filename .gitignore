@@ -1,15 +1,22 @@
+# IDE 配置文件 - 建议忽略整个 .idea 文件夹，因为那是个人偏好
+.idea/
 *.iml
-.gradle
-/local.properties
-/.idea/caches
-/.idea/libraries
-/.idea/modules.xml
-/.idea/workspace.xml
-/.idea/navEditor.xml
-/.idea/assetWizardSettings.xml
-.DS_Store
-/build
-/captures
-.externalNativeBuild
-.cxx
+.gradle/
 local.properties
+
+# 编译生成的文件 - 绝对不能传
+build/
+/*/build/
+bin/
+gen/
+
+# 缓存与日志
+.DS_Store
+captures/
+.externalNativeBuild/
+.cxx/
+*.log
+
+# 这里的 local.properties 包含了你的 Android SDK 本地路径
+# 每个人电脑路径不同，必须忽略
+/local.properties
