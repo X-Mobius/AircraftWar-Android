@@ -36,6 +36,7 @@ public class CircleShootStrategy implements ShootStrategy {
             res.add(bullet);
         }
 
+
         return res;
     }
 }
