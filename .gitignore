@@ -1,14 +1,16 @@
 # Android / Gradle
 .gradle/
 **/build/
+/build/
 local.properties
 *.iml
 .cxx/
 .externalNativeBuild/
 captures/
+*.log
 
-# IDE
+# IDE 配置文件 - 建议忽略整个 .idea 文件夹
 .idea/
 
-# OS
+# OS 缓存与日志
 .DS_Store
