@@ -1,67 +1,109 @@
 package edu.hitsz.rank;
 
-import java.io.*;
+import android.content.ContentValues;
+import android.content.Context;
+import android.database.Cursor;
+import android.database.sqlite.SQLiteDatabase;
+
 import java.util.ArrayList;
-import java.util.Collections;
 import java.util.List;
 
 public class ScoreDaoImpl implements ScoreDao {
-    private final File file = resolveScoreFile();
 
-    private static File resolveScoreFile() {
+    private final ScoreDbHelper dbHelper;
+
+    public ScoreDaoImpl() {
+        this(resolveContext());
+    }
+
+    public ScoreDaoImpl(Context context) {
+        if (context == null) {
+            throw new IllegalStateException("Context is required for ScoreDaoImpl.");
+        }
+        this.dbHelper = new ScoreDbHelper(context.getApplicationContext());
+    }
+
+    private static Context resolveContext() {
         try {
             Class<?> activityThread = Class.forName("android.app.ActivityThread");
             Object app = activityThread.getMethod("currentApplication").invoke(null);
-            if (app != null) {
-                File filesDir = (File) app.getClass().getMethod("getFilesDir").invoke(app);
-                if (filesDir != null) {
-                    return new File(filesDir, "scoreboard.txt");
-                }
+            if (app instanceof Context) {
+                return (Context) app;
             }
         } catch (Exception ignored) {
-            // Fallback for non-Android runtime.
+            // no-op
         }
-        return new File("scoreboard.txt");
+        throw new IllegalStateException("Cannot resolve application context.");
     }
 
     @Override
     public void addRecord(ScoreRecord record) {
-        List<ScoreRecord> list = getAllRecords();
-        list.add(record);
-        Collections.sort(list);
-        saveAllRecords(list);
+        SQLiteDatabase db = dbHelper.getWritableDatabase();
+        ContentValues values = new ContentValues();
+        values.put(ScoreDbHelper.COL_PLAYER_NAME, record.getPlayerName());
+        values.put(ScoreDbHelper.COL_SCORE, record.getScore());
+        values.put(ScoreDbHelper.COL_TIME, record.getTime());
+        db.insert(ScoreDbHelper.TABLE_SCORE, null, values);
     }
 
     @Override
     public List<ScoreRecord> getAllRecords() {
         List<ScoreRecord> list = new ArrayList<>();
-        if (!file.exists()) {
-            return list;
-        }
-        try (BufferedReader br = new BufferedReader(new FileReader(file))) {
-            String line;
-            while ((line = br.readLine()) != null) {
-                // 每行格式: playerName,score,time
-                String[] parts = line.split(",");
-                if (parts.length == 3) {
-                    list.add(new ScoreRecord(parts[0], Integer.parseInt(parts[1]), parts[2]));
-                }
+        SQLiteDatabase db = dbHelper.getReadableDatabase();
+        Cursor cursor = db.query(
+                ScoreDbHelper.TABLE_SCORE,
+                new String[]{
+                        ScoreDbHelper.COL_ID,
+                        ScoreDbHelper.COL_PLAYER_NAME,
+                        ScoreDbHelper.COL_SCORE,
+                        ScoreDbHelper.COL_TIME
+                },
+                null,
+                null,
+                null,
+                null,
+                ScoreDbHelper.COL_SCORE + " DESC, " + ScoreDbHelper.COL_ID + " ASC"
+        );
+        try {
+            while (cursor.moveToNext()) {
+                long id = cursor.getLong(cursor.getColumnIndexOrThrow(ScoreDbHelper.COL_ID));
+                String playerName = cursor.getString(cursor.getColumnIndexOrThrow(ScoreDbHelper.COL_PLAYER_NAME));
+                int score = cursor.getInt(cursor.getColumnIndexOrThrow(ScoreDbHelper.COL_SCORE));
+                String time = cursor.getString(cursor.getColumnIndexOrThrow(ScoreDbHelper.COL_TIME));
+                list.add(new ScoreRecord(id, playerName, score, time));
             }
-        } catch (IOException e) {
-            e.printStackTrace();
+        } finally {
+            cursor.close();
         }
         return list;
     }
 
     @Override
     public void saveAllRecords(List<ScoreRecord> records) {
-        try (BufferedWriter bw = new BufferedWriter(new FileWriter(file))) {
-            for (ScoreRecord r : records) {
-                bw.write(r.getPlayerName() + "," + r.getScore() + "," + r.getTime());
-                bw.newLine();
+        SQLiteDatabase db = dbHelper.getWritableDatabase();
+        db.beginTransaction();
+        try {
+            db.delete(ScoreDbHelper.TABLE_SCORE, null, null);
+            for (ScoreRecord record : records) {
+                ContentValues values = new ContentValues();
+                values.put(ScoreDbHelper.COL_PLAYER_NAME, record.getPlayerName());
+                values.put(ScoreDbHelper.COL_SCORE, record.getScore());
+                values.put(ScoreDbHelper.COL_TIME, record.getTime());
+                db.insert(ScoreDbHelper.TABLE_SCORE, null, values);
             }
-        } catch (IOException e) {
-            e.printStackTrace();
+            db.setTransactionSuccessful();
+        } finally {
+            db.endTransaction();
         }
+    }
+
+    @Override
+    public void deleteRecordById(long id) {
+        SQLiteDatabase db = dbHelper.getWritableDatabase();
+        db.delete(
+                ScoreDbHelper.TABLE_SCORE,
+                ScoreDbHelper.COL_ID + "=?",
+                new String[]{String.valueOf(id)}
+        );
     }
 }

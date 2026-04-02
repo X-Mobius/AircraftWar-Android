@@ -6,6 +6,8 @@ import android.graphics.Canvas;
 import android.graphics.Color;
 import android.graphics.Paint;
 import android.graphics.Rect;
+import android.os.Handler;
+import android.os.Message;
 import android.view.MotionEvent;
 import android.view.SurfaceHolder;
 import android.view.SurfaceView;
@@ -39,6 +41,8 @@ import java.util.concurrent.ScheduledThreadPoolExecutor;
  */
 public abstract class AbstractGame extends SurfaceView
         implements SurfaceHolder.Callback, Runnable, View.OnTouchListener {
+
+    public static final int MSG_GAME_OVER = 1001;
 
     protected Bitmap backgroundImage;
     protected int backGroundTop = 0;
@@ -90,6 +94,8 @@ public abstract class AbstractGame extends SurfaceView
     protected float renderOffsetX = 0f;
     protected float renderOffsetY = 0f;
     protected boolean heroPositionInitialized = false;
+    private Handler uiHandler;
+    private boolean gameOverMessageSent = false;
 
     public AbstractGame() {
         this(resolveContext());
@@ -137,6 +143,10 @@ public abstract class AbstractGame extends SurfaceView
     /** 启动游戏循环（兼容旧调用方式）。 */
     public void action() {
         startDrawThreadIfNeeded();
+    }
+
+    public void setUiHandler(Handler handler) {
+        this.uiHandler = handler;
     }
 
     private synchronized void startDrawThreadIfNeeded() {
@@ -304,6 +314,7 @@ public abstract class AbstractGame extends SurfaceView
             isDrawing = false;
             executorService.shutdown();
             System.out.println("Game Over!");
+            dispatchGameOverMessage();
             onGameOver();
         }
     }
@@ -311,6 +322,16 @@ public abstract class AbstractGame extends SurfaceView
     // ================= 模板钩子（由子类实现） =================
 
     /** 难度随时间变化。 */
+    private void dispatchGameOverMessage() {
+        if (gameOverMessageSent || uiHandler == null) {
+            return;
+        }
+        gameOverMessageSent = true;
+        Message message = uiHandler.obtainMessage(MSG_GAME_OVER);
+        message.arg1 = score;
+        uiHandler.sendMessage(message);
+    }
+
     protected abstract void difficultyUpdate(int time);
 
     /** 敌机生成策略。 */

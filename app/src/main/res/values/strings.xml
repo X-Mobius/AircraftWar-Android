@@ -1,8 +1,20 @@
 <resources>
     <string name="app_name">AircraftWar</string>
+
     <string name="difficulty_title">请选择游戏难度</string>
     <string name="difficulty_easy">简单</string>
     <string name="difficulty_medium">普通</string>
     <string name="difficulty_hard">困难</string>
     <string name="sound_switch">音乐与音效</string>
+
+    <string name="rank_title">排行榜</string>
+    <string name="rank_empty">暂无排行榜数据</string>
+    <string name="rank_delete">删除</string>
+    <string name="rank_deleted">已删除该条记录</string>
+    <string name="rank_score_prefix">分数：%1$d</string>
+
+    <string name="game_over_title">游戏结束</string>
+    <string name="game_over_message">本局得分：%1$d\n请输入玩家名</string>
+    <string name="game_over_input_hint">请输入玩家名</string>
+    <string name="game_over_confirm">确定</string>
 </resources>

@@ -2,7 +2,6 @@ package edu.hitsz.application;
 
 import android.content.Context;
 import android.util.Log;
-import android.widget.Toast;
 
 import edu.hitsz.aircraft.AbstractAircraft;
 import edu.hitsz.aircraft.BossEnemy;
@@ -11,9 +10,6 @@ import edu.hitsz.enemyfactory.EliteEnemyFactory;
 import edu.hitsz.enemyfactory.ElitePlusEnemyFactory;
 import edu.hitsz.enemyfactory.EnemyFactory;
 import edu.hitsz.enemyfactory.MobEnemyFactory;
-import edu.hitsz.rank.ScoreDao;
-import edu.hitsz.rank.ScoreDaoImpl;
-import edu.hitsz.rank.ScoreRecord;
 import edu.hitsz.sound.SoundManager;
 
 public class NormalGame extends AbstractGame {
@@ -91,16 +87,7 @@ public class NormalGame extends AbstractGame {
     protected void onGameOver() {
         SoundManager.stopBgm();
         SoundManager.playSoundEffect("src/videos/game_over.wav", -15f);
-
-        int finalScore = score;
-        String playerName = "Player";
-
-        ScoreRecord record = new ScoreRecord(playerName, finalScore);
-        ScoreDao scoreDao = new ScoreDaoImpl();
-        scoreDao.addRecord(record);
-
-        Log.i("NormalGame", "Game over. mode=normal, score=" + finalScore);
-        post(() -> Toast.makeText(getContext(), "Game Over, Score: " + finalScore, Toast.LENGTH_SHORT).show());
+        Log.i("NormalGame", "Game over. mode=normal, score=" + score);
     }
 
     protected void generateEnemy() {
