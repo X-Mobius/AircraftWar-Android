@@ -8,6 +8,7 @@ import android.text.TextUtils;
 import android.view.ViewGroup;
 import android.widget.EditText;
 import android.widget.FrameLayout;
+import android.widget.Toast;
 
 import androidx.appcompat.app.AlertDialog;
 import androidx.appcompat.app.AppCompatActivity;
@@ -27,6 +28,7 @@ public class GameActivity extends AppCompatActivity {
 
     private AbstractGame gameView;
     private boolean gameOverHandled = false;
+    private ScoreDao scoreDao;
     private final Handler gameUiHandler = new Handler(Looper.getMainLooper(), msg -> {
         if (msg.what == AbstractGame.MSG_GAME_OVER) {
             showGameOverDialog(msg.arg1);
@@ -52,6 +54,7 @@ public class GameActivity extends AppCompatActivity {
             soundOn = getIntent().getBooleanExtra(EXTRA_SOUND_ON, true);
         }
         SoundManager.setSoundOn(soundOn);
+        scoreDao = new ScoreDaoImpl(this);
 
         gameView = Main.createGame(this, difficulty);
         gameView.setUiHandler(gameUiHandler);
@@ -73,23 +76,30 @@ public class GameActivity extends AppCompatActivity {
         input.setHint(R.string.game_over_input_hint);
         input.setSingleLine();
 
-        new AlertDialog.Builder(this)
+        AlertDialog dialog = new AlertDialog.Builder(this)
                 .setTitle(R.string.game_over_title)
                 .setMessage(getString(R.string.game_over_message, finalScore))
                 .setView(input)
                 .setCancelable(false)
-                .setPositiveButton(R.string.game_over_confirm, (dialog, which) -> {
+                .setPositiveButton(R.string.game_over_confirm, null)
+                .create();
+
+        dialog.setOnShowListener(d -> dialog.getButton(AlertDialog.BUTTON_POSITIVE).setOnClickListener(v -> {
                     String playerName = input.getText() == null ? "" : input.getText().toString().trim();
                     if (TextUtils.isEmpty(playerName)) {
                         playerName = "Player";
                     }
+                    if (scoreDao.existsPlayerName(playerName)) {
+                        Toast.makeText(this, "玩家名已存在，请换一个名字", Toast.LENGTH_SHORT).show();
+                        return;
+                    }
                     saveScoreAndOpenRank(playerName, finalScore);
-                })
-                .show();
+                    dialog.dismiss();
+                }));
+        dialog.show();
     }
 
     private void saveScoreAndOpenRank(String playerName, int finalScore) {
-        ScoreDao scoreDao = new ScoreDaoImpl(this);
         scoreDao.addRecord(new ScoreRecord(playerName, finalScore));
         startActivity(new Intent(this, RankActivity.class));
         finish();

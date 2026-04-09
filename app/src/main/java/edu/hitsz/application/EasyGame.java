@@ -12,6 +12,13 @@ import edu.hitsz.sound.SoundManager;
 
 public class EasyGame extends AbstractGame {
 
+    private final int elitePlusEnemyHp = 30;
+    private final int eliteEnemyHp = 30;
+    private final int mobEnemyHp = 30;
+    private final int elitePlusEnemySpeed = 7;
+    private final int eliteEnemySpeed = 6;
+    private final int mobEnemySpeed = 5;
+
     public EasyGame() {
         initGameConfig();
     }
@@ -45,14 +52,17 @@ public class EasyGame extends AbstractGame {
 
             // Spawn mob/elite enemies by probability.
             double random = Math.random();
+            AbstractAircraft enemy;
             if (random < 0.15) {
                 factory = new ElitePlusEnemyFactory();
+                enemy = factory.createEnemy(elitePlusEnemyHp, elitePlusEnemySpeed);
             } else if (random < 0.35) {
                 factory = new EliteEnemyFactory();
+                enemy = factory.createEnemy(eliteEnemyHp, eliteEnemySpeed);
             } else {
                 factory = new MobEnemyFactory();
+                enemy = factory.createEnemy(mobEnemyHp, mobEnemySpeed);
             }
-            AbstractAircraft enemy = factory.createEnemy();
             enemyAircrafts.add(enemy);
         }
     }

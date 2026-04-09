@@ -7,4 +7,5 @@ public interface ScoreDao {
     List<ScoreRecord> getAllRecords();
     void saveAllRecords(List<ScoreRecord> records);
     void deleteRecordById(long id);
+    boolean existsPlayerName(String playerName);
 }

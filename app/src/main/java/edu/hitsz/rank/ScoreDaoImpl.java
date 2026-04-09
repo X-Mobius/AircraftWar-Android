@@ -106,4 +106,32 @@ public class ScoreDaoImpl implements ScoreDao {
                 new String[]{String.valueOf(id)}
         );
     }
+
+    @Override
+    public boolean existsPlayerName(String playerName) {
+        if (playerName == null) {
+            return false;
+        }
+        String normalizedName = playerName.trim();
+        if (normalizedName.isEmpty()) {
+            return false;
+        }
+
+        SQLiteDatabase db = dbHelper.getReadableDatabase();
+        Cursor cursor = db.query(
+                ScoreDbHelper.TABLE_SCORE,
+                new String[]{ScoreDbHelper.COL_ID},
+                "LOWER(" + ScoreDbHelper.COL_PLAYER_NAME + ") = LOWER(?)",
+                new String[]{normalizedName},
+                null,
+                null,
+                null,
+                "1"
+        );
+        try {
+            return cursor.moveToFirst();
+        } finally {
+            cursor.close();
+        }
+    }
 }

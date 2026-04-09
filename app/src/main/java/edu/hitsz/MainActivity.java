@@ -35,6 +35,10 @@ public class MainActivity extends AppCompatActivity {
         findViewById(R.id.btn_easy).setOnClickListener(v -> startGame("easy"));
         findViewById(R.id.btn_medium).setOnClickListener(v -> startGame("medium"));
         findViewById(R.id.btn_hard).setOnClickListener(v -> startGame("hard"));
+        findViewById(R.id.btn_exit).setOnClickListener(v -> {
+            moveTaskToBack(true);
+            finishAffinity();
+        });
     }
 
     private void startGame(String difficulty) {

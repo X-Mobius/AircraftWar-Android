@@ -1,5 +1,6 @@
 package edu.hitsz;
 
+import android.content.Intent;
 import android.os.Bundle;
 import android.widget.ListView;
 import android.widget.TextView;
@@ -31,6 +32,12 @@ public class RankActivity extends AppCompatActivity {
         adapter = new RankListAdapter(this, scoreDao, scoreDao.getAllRecords());
         rankListView.setAdapter(adapter);
         refreshEmptyView();
+        findViewById(R.id.btn_rank_close).setOnClickListener(v -> {
+            Intent intent = new Intent(this, MainActivity.class);
+            intent.addFlags(Intent.FLAG_ACTIVITY_CLEAR_TOP | Intent.FLAG_ACTIVITY_SINGLE_TOP);
+            startActivity(intent);
+            finish();
+        });
     }
 
     @Override

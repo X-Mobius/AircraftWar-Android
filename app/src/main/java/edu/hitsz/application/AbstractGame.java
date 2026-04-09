@@ -105,6 +105,10 @@ public abstract class AbstractGame extends SurfaceView
         super(context);
 
         heroAircraft = HeroAircraft.getHeroAircraft();
+        int defaultX = Main.WINDOW_WIDTH / 2;
+        int heroImageHeight = ImageManager.HERO_IMAGE == null ? 0 : ImageManager.HERO_IMAGE.getHeight();
+        int defaultY = Main.WINDOW_HEIGHT - heroImageHeight;
+        heroAircraft.resetForNewGame(defaultX, defaultY);
         enemyAircrafts = new LinkedList<>();
         heroBullets = new LinkedList<>();
         enemyBullets = new LinkedList<>();
