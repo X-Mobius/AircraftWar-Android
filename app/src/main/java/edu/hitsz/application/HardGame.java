@@ -27,8 +27,10 @@ public class HardGame extends AbstractGame {
     private int bossHp = 150;
     private int elitePlusEnemyHp = 60;
     private int eliteEnemyHp = 30;
-    private int elitePlusEnemySpeed = 9;
-    private int eliteEnemySpeed = 8;
+    private int mobEnemyHp = 35;
+    private int elitePlusEnemySpeed = 11;
+    private int eliteEnemySpeed = 10;
+    private int mobEnemySpeed = 9;
     private double elitePlusEnemyProbability = 0.15;
     private double eliteEnemyProbability = 0.35;
 
@@ -51,8 +53,8 @@ public class HardGame extends AbstractGame {
 
     @Override
     protected void difficultyUpdate(int time) {
-        // Increase difficulty every 20 seconds.
-        if (time - lastDifficultyTime >= 20000) {
+        // Increase difficulty every 12 seconds.
+        if (time - lastDifficultyTime >= 12000) {
             lastDifficultyTime = time;
 
             if (elitePlusEnemyHp < 120) {
@@ -63,19 +65,27 @@ public class HardGame extends AbstractGame {
                 eliteEnemyHp += 10;
                 System.out.println("[Difficulty] Elite HP -> " + eliteEnemyHp);
             }
+            if (mobEnemyHp < 80) {
+                mobEnemyHp += 5;
+                System.out.println("[Difficulty] Mob HP -> " + mobEnemyHp);
+            }
 
             if (enemyMaxNumber < 9) {
                 enemyMaxNumber += 1;
                 System.out.println("[Difficulty] enemyMaxNumber -> " + enemyMaxNumber);
             }
 
-            if (eliteEnemySpeed < 13) {
+            if (eliteEnemySpeed < 16) {
                 eliteEnemySpeed += 1;
                 System.out.println("[Difficulty] Elite speed -> " + eliteEnemySpeed);
             }
-            if (elitePlusEnemySpeed < 15) {
+            if (elitePlusEnemySpeed < 18) {
                 elitePlusEnemySpeed += 1;
                 System.out.println("[Difficulty] ElitePlus speed -> " + elitePlusEnemySpeed);
+            }
+            if (mobEnemySpeed < 15) {
+                mobEnemySpeed += 1;
+                System.out.println("[Difficulty] Mob speed -> " + mobEnemySpeed);
             }
 
             if (cycleDuration > 300) {
@@ -132,7 +142,7 @@ public class HardGame extends AbstractGame {
                     enemy = factory.createEnemy(eliteEnemyHp, eliteEnemySpeed);
                 } else {
                     factory = new MobEnemyFactory();
-                    enemy = factory.createEnemy();
+                    enemy = factory.createEnemy(mobEnemyHp, mobEnemySpeed);
                 }
                 enemyAircrafts.add(enemy);
             }

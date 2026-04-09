@@ -16,6 +16,10 @@ import java.util.List;
 public class HeroAircraft extends AbstractAircraft {
 
     private volatile static HeroAircraft heroAircraft;
+    private static final int DEFAULT_HP = 1000;
+    private static final int DEFAULT_POWER = 30;
+    private static final int DEFAULT_SHOOT_NUM = 1;
+    private static final int DEFAULT_DIRECTION = -1;
 
     /**
      * @param locationX 英雄机位置x坐标
@@ -43,11 +47,31 @@ public class HeroAircraft extends AbstractAircraft {
                     heroAircraft = new HeroAircraft(
                             Main.WINDOW_WIDTH / 2,
                             Main.WINDOW_HEIGHT - ImageManager.HERO_IMAGE.getHeight() ,
-                            0, 0, 1000);
+                            0, 0, DEFAULT_HP);
                 }
             }
         }
         return heroAircraft;
+    }
+
+    public synchronized void resetForNewGame(int locationX, int locationY) {
+        this.setLocation(locationX, locationY);
+        this.isValid = true;
+        this.setHp(this.getMaxHp());
+        this.power = DEFAULT_POWER;
+        this.shootNum = DEFAULT_SHOOT_NUM;
+        this.direction = DEFAULT_DIRECTION;
+        this.shootStrategy = new DirectShootStrategy();
+        this.shootStrategyPriority = 0;
+        this.shootStrategyEndTime = 0;
+        this.strategyEndTime = 0;
+        this.pendingShootStrategy = null;
+        this.pendingDurationSeconds = 0;
+        this.pendingPriority = 0;
+        this.strategyActive = false;
+        if (this.strategyTimerThread != null && this.strategyTimerThread.isAlive()) {
+            this.strategyTimerThread.interrupt();
+        }
     }
 
     @Override
