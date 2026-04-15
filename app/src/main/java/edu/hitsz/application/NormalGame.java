@@ -33,6 +33,7 @@ public class NormalGame extends AbstractGame {
     }
 
     private void initGameConfig() {
+        // 普通模式基础参数。
         this.backgroundImage = ImageManager.BACKGROUND_IMAGE_MEDIUM;
         this.enemyMaxNumber = 4;
         this.cycleDuration = 600;
@@ -42,7 +43,7 @@ public class NormalGame extends AbstractGame {
 
     @Override
     protected void difficultyUpdate(int time) {
-        // Increase difficulty every 15 seconds.
+        // 每 15 秒提升一次难度参数。
         if (time - lastDifficultyTime >= 15000) {
             lastDifficultyTime = time;
 
@@ -114,7 +115,7 @@ public class NormalGame extends AbstractGame {
         if (enemyAircrafts.size() < enemyMaxNumber) {
             EnemyFactory factory;
 
-            // Check whether there is a living boss.
+            // 先检查当前场上是否有存活 Boss。
             boolean bossExists = false;
             for (AbstractAircraft enemy : enemyAircrafts) {
                 if (enemy instanceof BossEnemy && !enemy.notValid()) {
@@ -127,6 +128,7 @@ public class NormalGame extends AbstractGame {
                 factory = new BossEnemyFactory();
                 AbstractAircraft boss = factory.createEnemy();
                 enemyAircrafts.add(boss);
+                // Boss 出现时切换 Boss 背景音乐。
                 SoundManager.playBossBgm();
                 lastBossScore += 300;
             } else {

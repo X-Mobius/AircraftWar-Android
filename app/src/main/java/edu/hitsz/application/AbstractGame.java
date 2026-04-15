@@ -39,6 +39,10 @@ import java.util.concurrent.ScheduledThreadPoolExecutor;
  * 负责通用的游戏循环、绘制、触摸输入和碰撞处理，
  * 难度相关差异由子类实现。
  */
+/**
+ * Android 版游戏主循环基类（SurfaceView 方案）。
+ * 迁移策略是尽量复用原有玩法逻辑，只把 Windows/Swing 生命周期替换为 Surface 生命周期与绘制线程。
+ */
 public abstract class AbstractGame extends SurfaceView
         implements SurfaceHolder.Callback, Runnable, View.OnTouchListener {
 
@@ -94,6 +98,7 @@ public abstract class AbstractGame extends SurfaceView
     protected float renderOffsetX = 0f;
     protected float renderOffsetY = 0f;
     protected boolean heroPositionInitialized = false;
+    /** 由 Activity 注入的主线程 Handler，用于跨线程回传游戏结束事件。 */
     private Handler uiHandler;
     private boolean gameOverMessageSent = false;
 
@@ -132,6 +137,7 @@ public abstract class AbstractGame extends SurfaceView
         throw new IllegalStateException("Context is required for AbstractGame SurfaceView.");
     }
 
+    /** 初始化 Surface 回调、触摸监听、文本画笔。 */
     private void initSurfaceComponents() {
         surfaceHolder = getHolder();
         surfaceHolder.addCallback(this);
@@ -145,10 +151,12 @@ public abstract class AbstractGame extends SurfaceView
     }
 
     /** 启动游戏循环（兼容旧调用方式）。 */
+    /** 兼容旧调用入口，内部仍启动 Surface 绘制线程。 */
     public void action() {
         startDrawThreadIfNeeded();
     }
 
+    /** 绑定 Activity 主线程 Handler。 */
     public void setUiHandler(Handler handler) {
         this.uiHandler = handler;
     }
@@ -176,12 +184,16 @@ public abstract class AbstractGame extends SurfaceView
     }
 
     @Override
+    /** Surface 可用后启动背景音乐与绘制循环。 */
     public void surfaceCreated(SurfaceHolder holder) {
         SoundManager.playBgm();
         startDrawThreadIfNeeded();
     }
 
     @Override
+    /**
+     * Surface 尺寸变化时，同步逻辑尺寸为实际尺寸，保证触摸映射与绘制坐标一致。
+     */
     public void surfaceChanged(SurfaceHolder holder, int format, int width, int height) {
         surfaceWidth = Math.max(1, width);
         surfaceHeight = Math.max(1, height);
@@ -224,6 +236,7 @@ public abstract class AbstractGame extends SurfaceView
     }
 
     @Override
+    /** 游戏主循环线程：更新一帧逻辑并提交一帧画面。 */
     public void run() {
         while (isDrawing) {
             long frameStart = System.currentTimeMillis();
@@ -258,6 +271,9 @@ public abstract class AbstractGame extends SurfaceView
     }
 
     @Override
+    /**
+     * 触摸输入映射：先将 View 坐标换算到逻辑坐标，再限制英雄机在可见区域内。
+     */
     public boolean onTouch(View view, MotionEvent motionEvent) {
         int action = motionEvent.getActionMasked();
         if (action != MotionEvent.ACTION_DOWN && action != MotionEvent.ACTION_MOVE) {
@@ -267,7 +283,7 @@ public abstract class AbstractGame extends SurfaceView
             return true;
         }
 
-        // Use real view size first to avoid stale mapping before/without surfaceChanged callback.
+        // 优先使用当前 View 尺寸，避免 surfaceChanged 未触发时出现映射滞后。
         int vw = Math.max(1, view.getWidth());
         int vh = Math.max(1, view.getHeight());
         if (vw <= 1 || vh <= 1) {
@@ -282,7 +298,7 @@ public abstract class AbstractGame extends SurfaceView
         int heroHalfW = ImageManager.HERO_IMAGE == null ? 0 : ImageManager.HERO_IMAGE.getWidth() / 2;
         int heroHalfH = ImageManager.HERO_IMAGE == null ? 0 : ImageManager.HERO_IMAGE.getHeight() / 2;
 
-        // Keep hero fully inside logical game area.
+        // 将英雄机完整限制在逻辑区域内。
         int minX = heroHalfW;
         int maxX = logicalWidth - heroHalfW;
         int minY = heroHalfH;
@@ -294,6 +310,7 @@ public abstract class AbstractGame extends SurfaceView
         return true;
     }
 
+    /** 单帧更新流程：周期生成/射击 + 位移 + 碰撞 + 清理 + 结束判定。 */
     private void updateGameFrame() {
         time += timeInterval;
 
@@ -326,6 +343,7 @@ public abstract class AbstractGame extends SurfaceView
     // ================= 模板钩子（由子类实现） =================
 
     /** 难度随时间变化。 */
+    /** 向 UI 线程投递一次游戏结束消息，避免重复弹窗/跳转。 */
     private void dispatchGameOverMessage() {
         if (gameOverMessageSent || uiHandler == null) {
             return;
@@ -550,6 +568,7 @@ public abstract class AbstractGame extends SurfaceView
         return this.score;
     }
 
+    /** 绘制完整一帧：背景、实体对象、主机与 HUD。 */
     private void drawFrame(Canvas canvas) {
         if (canvas == null) {
             return;
@@ -590,6 +609,10 @@ public abstract class AbstractGame extends SurfaceView
         canvas.restore();
     }
 
+    /**
+     * 当前迁移阶段采用整屏直接缩放 + 零偏移。
+     * 保证触摸坐标与渲染坐标处于同一坐标体系。
+     */
     protected void updateRenderTransform(int width, int height) {
         int safeW = Math.max(1, width);
         int safeH = Math.max(1, height);

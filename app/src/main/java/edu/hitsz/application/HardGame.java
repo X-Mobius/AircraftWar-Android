@@ -44,6 +44,7 @@ public class HardGame extends AbstractGame {
     }
 
     private void initGameConfig() {
+        // 困难模式默认起始压力更高。
         this.backgroundImage = ImageManager.BACKGROUND_IMAGE_HARD;
         this.enemyMaxNumber = 5;
         this.cycleDuration = 600;
@@ -53,7 +54,7 @@ public class HardGame extends AbstractGame {
 
     @Override
     protected void difficultyUpdate(int time) {
-        // Increase difficulty every 12 seconds.
+        // 每 12 秒提升一次难度参数。
         if (time - lastDifficultyTime >= 12000) {
             lastDifficultyTime = time;
 
@@ -130,6 +131,7 @@ public class HardGame extends AbstractGame {
                 enemyAircrafts.add(boss);
                 SoundManager.playBossBgm();
                 lastBossScore += 500;
+                // 困难模式 Boss 出现频率较低，但每次出现都会成长。
                 bossHp += 30;
             } else {
                 double random = Math.random();
@@ -149,10 +151,10 @@ public class HardGame extends AbstractGame {
         }
     }
 
-    // Hard mode custom score/drop tuning.
+    // 困难模式自定义得分与掉落逻辑。
     @Override
     protected void crashCheckAction() {
-        // Enemy bullets hit hero.
+        // 敌方子弹命中英雄机。
         for (BaseBullet bullet : enemyBullets) {
             if (bullet.notValid()) {
                 continue;
@@ -163,7 +165,7 @@ public class HardGame extends AbstractGame {
             }
         }
 
-        // Hero bullets hit enemies.
+        // 英雄机子弹命中敌机。
         for (BaseBullet bullet : heroBullets) {
             if (bullet.notValid()) {
                 continue;
@@ -236,7 +238,7 @@ public class HardGame extends AbstractGame {
                         }
                     }
                 }
-                // Hero collides with enemy.
+                // 英雄机与敌机发生碰撞。
                 if (enemyAircraft.crash(heroAircraft) || heroAircraft.crash(enemyAircraft)) {
                     enemyAircraft.vanish();
                     heroAircraft.decreaseHp(Integer.MAX_VALUE);
@@ -244,7 +246,7 @@ public class HardGame extends AbstractGame {
             }
         }
 
-        // Hero collects props.
+        // 英雄机拾取道具。
         for (BaseProperty property : properties) {
             if (property.notValid()) {
                 continue;

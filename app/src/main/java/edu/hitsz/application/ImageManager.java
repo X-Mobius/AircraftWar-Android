@@ -15,6 +15,7 @@ import edu.hitsz.property.*;
 
 public class ImageManager {
 
+    /** 类名到位图资源的映射表，保证对象绘制逻辑可复用旧架构。 */
     private static final Map<String, Bitmap> CLASSNAME_IMAGE_MAP = new HashMap<>();
     private static boolean initialized = false;
 
@@ -35,8 +36,10 @@ public class ImageManager {
     public static Bitmap BULLET_PLUS_SUPPLY_IMAGE;
 
     public static void init(Context context) {
+        // 幂等初始化，避免重复 decodeResource。
         if (initialized) return;
 
+        // 用 BitmapFactory + 资源 ID 替代旧版 ImageIO.read(filePath)。
         BACKGROUND_IMAGE = BitmapFactory.decodeResource(context.getResources(), R.drawable.bg);
         BACKGROUND_IMAGE_EASY = BitmapFactory.decodeResource(context.getResources(), R.drawable.bg);
         BACKGROUND_IMAGE_MEDIUM = BitmapFactory.decodeResource(context.getResources(), R.drawable.bg3);
@@ -54,6 +57,7 @@ public class ImageManager {
         BOMB_SUPPLY_IMAGE = BitmapFactory.decodeResource(context.getResources(), R.drawable.prop_bomb);
         BULLET_PLUS_SUPPLY_IMAGE = BitmapFactory.decodeResource(context.getResources(), R.drawable.prop_bulletplus);
 
+        // 为所有可绘制对象注册类名到图片的映射。
         CLASSNAME_IMAGE_MAP.put(HeroAircraft.class.getName(), HERO_IMAGE);
         CLASSNAME_IMAGE_MAP.put(MobEnemy.class.getName(), MOB_ENEMY_IMAGE);
         CLASSNAME_IMAGE_MAP.put(EliteEnemy.class.getName(), ELITE_ENEMY_IMAGE);

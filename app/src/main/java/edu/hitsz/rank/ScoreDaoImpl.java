@@ -20,6 +20,7 @@ public class ScoreDaoImpl implements ScoreDao {
         if (context == null) {
             throw new IllegalStateException("Context is required for ScoreDaoImpl.");
         }
+        // 持有 Application Context，避免 Activity 泄漏。
         this.dbHelper = new ScoreDbHelper(context.getApplicationContext());
     }
 
@@ -38,6 +39,7 @@ public class ScoreDaoImpl implements ScoreDao {
 
     @Override
     public void addRecord(ScoreRecord record) {
+        // 结算流程的单条插入路径。
         SQLiteDatabase db = dbHelper.getWritableDatabase();
         ContentValues values = new ContentValues();
         values.put(ScoreDbHelper.COL_PLAYER_NAME, record.getPlayerName());
@@ -49,6 +51,7 @@ public class ScoreDaoImpl implements ScoreDao {
     @Override
     public List<ScoreRecord> getAllRecords() {
         List<ScoreRecord> list = new ArrayList<>();
+        // 昵称存在性校验（忽略大小写），用于结算页去重提示。
         SQLiteDatabase db = dbHelper.getReadableDatabase();
         Cursor cursor = db.query(
                 ScoreDbHelper.TABLE_SCORE,
@@ -62,6 +65,7 @@ public class ScoreDaoImpl implements ScoreDao {
                 null,
                 null,
                 null,
+                // 同分时按更早写入顺序保持稳定。
                 ScoreDbHelper.COL_SCORE + " DESC, " + ScoreDbHelper.COL_ID + " ASC"
         );
         try {
@@ -80,7 +84,9 @@ public class ScoreDaoImpl implements ScoreDao {
 
     @Override
     public void saveAllRecords(List<ScoreRecord> records) {
+        // 结算流程的单条插入路径。
         SQLiteDatabase db = dbHelper.getWritableDatabase();
+        // 全量覆盖操作使用事务，保证数据一致性。
         db.beginTransaction();
         try {
             db.delete(ScoreDbHelper.TABLE_SCORE, null, null);
@@ -99,6 +105,7 @@ public class ScoreDaoImpl implements ScoreDao {
 
     @Override
     public void deleteRecordById(long id) {
+        // 结算流程的单条插入路径。
         SQLiteDatabase db = dbHelper.getWritableDatabase();
         db.delete(
                 ScoreDbHelper.TABLE_SCORE,
@@ -117,6 +124,7 @@ public class ScoreDaoImpl implements ScoreDao {
             return false;
         }
 
+        // 昵称存在性校验（忽略大小写），用于结算页去重提示。
         SQLiteDatabase db = dbHelper.getReadableDatabase();
         Cursor cursor = db.query(
                 ScoreDbHelper.TABLE_SCORE,

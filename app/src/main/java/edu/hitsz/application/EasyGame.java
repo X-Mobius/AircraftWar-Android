@@ -29,6 +29,7 @@ public class EasyGame extends AbstractGame {
     }
 
     private void initGameConfig() {
+        // 简单模式尽量贴近 Windows 原始默认参数。
         this.backgroundImage = ImageManager.BACKGROUND_IMAGE_EASY;
         this.enemyMaxNumber = 3;
         this.cycleDuration = 600;
@@ -36,7 +37,7 @@ public class EasyGame extends AbstractGame {
 
     @Override
     protected void difficultyUpdate(int time) {
-        // Easy mode keeps fixed difficulty.
+        // 简单模式保持固定难度，不做动态增强。
     }
 
     @Override
@@ -50,7 +51,7 @@ public class EasyGame extends AbstractGame {
         if (enemyAircrafts.size() < enemyMaxNumber) {
             EnemyFactory factory;
 
-            // Spawn mob/elite enemies by probability.
+            // 按概率生成普通敌机与精英敌机。
             double random = Math.random();
             AbstractAircraft enemy;
             if (random < 0.15) {

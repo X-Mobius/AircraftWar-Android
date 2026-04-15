@@ -11,10 +11,13 @@ import java.util.Locale;
 import java.util.Map;
 
 /**
- * Android sound manager.
- * MediaPlayer is used for long background music, SoundPool for short game effects.
+ * Android 音频管理器。
+ * MediaPlayer 负责长时循环的背景音乐，SoundPool 负责短促高频的音效。
  */
 public final class SoundManager {
+
+    // 迁移关键点：保留 Windows 版本的调用风格（如 src/videos/xxx.wav），
+    // 在 Android 侧统一映射到 raw 资源 id。
 
     private static final String TAG = "SoundManager";
     private static final int DEFAULT_MAX_STREAMS = 8;
@@ -45,6 +48,7 @@ public final class SoundManager {
         }
         appContext = context.getApplicationContext();
         if (soundPool == null) {
+            // SoundPool 只初始化一次，并预加载常用音效降低首次延迟。
             AudioAttributes audioAttributes = new AudioAttributes.Builder()
                     .setUsage(AudioAttributes.USAGE_GAME)
                     .setContentType(AudioAttributes.CONTENT_TYPE_SONIFICATION)
@@ -72,6 +76,7 @@ public final class SoundManager {
     public static synchronized void setSoundOn(boolean on) {
         soundOn = on;
         if (!soundOn) {
+            // 关闭音效时立即停止 BGM，保证设置实时生效。
             stopBgm();
         }
     }
@@ -82,6 +87,7 @@ public final class SoundManager {
 
     public static synchronized void playBgm() {
         if (!soundOn) {
+            // 关闭音效时立即停止 BGM，保证设置实时生效。
             return;
         }
         playLoopingBgm(BGM_NORMAL);
@@ -89,6 +95,7 @@ public final class SoundManager {
 
     public static synchronized void playBossBgm() {
         if (!soundOn) {
+            // 关闭音效时立即停止 BGM，保证设置实时生效。
             return;
         }
         playLoopingBgm(BGM_BOSS);
@@ -111,6 +118,7 @@ public final class SoundManager {
 
     public static synchronized void playSoundEffect(String filePath) {
         if (!soundOn) {
+            // 关闭音效时立即停止 BGM，保证设置实时生效。
             return;
         }
         playEffectByPath(filePath, 1.0f);
@@ -118,6 +126,7 @@ public final class SoundManager {
 
     public static synchronized void playSoundEffect(String path, float volume) {
         if (!soundOn) {
+            // 关闭音效时立即停止 BGM，保证设置实时生效。
             return;
         }
         playEffectByPath(path, dbToLinear(volume));
@@ -130,6 +139,7 @@ public final class SoundManager {
             return;
         }
         if (bgmPlayer != null && currentBgmResId == resId) {
+            // 相同 BGM 已存在时直接继续播放，避免重复创建播放器。
             if (!bgmPlayer.isPlaying()) {
                 bgmPlayer.start();
             }
@@ -158,6 +168,7 @@ public final class SoundManager {
             return;
         }
         if (soundPool == null) {
+            // SoundPool 只初始化一次，并预加载常用音效降低首次延迟。
             init(appContext);
         }
 
@@ -169,6 +180,7 @@ public final class SoundManager {
 
         Integer soundId = effectResToSoundId.get(resId);
         if (soundId == null) {
+            // 对非常用音效懒加载，兼顾性能和兼容性。
             soundId = soundPool.load(appContext, resId, 1);
             effectResToSoundId.put(resId, soundId);
         }
@@ -188,6 +200,7 @@ public final class SoundManager {
         if (appContext == null || nameOrPath == null || nameOrPath.trim().isEmpty()) {
             return 0;
         }
+        // 同时兼容资源名（bgm_boss）和旧路径（src/videos/bgm_boss.wav）。
         String normalized = nameOrPath.replace('\\', '/');
         int slash = normalized.lastIndexOf('/');
         String base = slash >= 0 ? normalized.substring(slash + 1) : normalized;

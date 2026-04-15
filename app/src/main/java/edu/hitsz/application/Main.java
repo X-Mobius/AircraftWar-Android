@@ -3,7 +3,7 @@ package edu.hitsz.application;
 import android.content.Context;
 
 /**
- * Shared game constants and difficulty factory for Android runtime.
+ * Android 运行时共享窗口常量与难度工厂。
  */
 public final class Main {
 
@@ -14,6 +14,7 @@ public final class Main {
     }
 
     public static void updateWindowSize(int width, int height) {
+        // 由 AbstractGame.surfaceChanged 调用，同步运行时窗口尺寸。
         if (width > 0) {
             WINDOW_WIDTH = width;
         }
@@ -23,7 +24,7 @@ public final class Main {
     }
 
     /**
-     * Build a game instance by difficulty with Android context.
+     * 按难度创建游戏实例（Android Context 版本）。
      */
     public static AbstractGame createGame(Context context, String difficulty) {
         String mode = difficulty == null ? "easy" : difficulty.toLowerCase();
@@ -40,7 +41,7 @@ public final class Main {
     }
 
     /**
-     * Legacy compatibility for old call sites.
+     * 兼容旧调用方式的入口。
      */
     public static AbstractGame startGame(String difficulty) {
         String mode = difficulty == null ? "easy" : difficulty.toLowerCase();

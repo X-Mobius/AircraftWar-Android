@@ -29,6 +29,7 @@ public class RankListAdapter extends BaseAdapter {
     }
 
     public void replaceData(List<ScoreRecord> newRecords) {
+        // 当前记录量下采用全量替换刷新，逻辑更直观。
         records.clear();
         if (newRecords != null) {
             records.addAll(newRecords);
@@ -54,6 +55,7 @@ public class RankListAdapter extends BaseAdapter {
     @Override
     public View getView(int position, View convertView, ViewGroup parent) {
         ViewHolder holder;
+        // 使用 ViewHolder 模式复用行视图，减少 findViewById 开销。
         if (convertView == null) {
             convertView = inflater.inflate(R.layout.item_rank_row, parent, false);
             holder = new ViewHolder();
@@ -73,6 +75,7 @@ public class RankListAdapter extends BaseAdapter {
         holder.score.setText(inflater.getContext().getString(R.string.rank_score_prefix, record.getScore()));
         holder.time.setText(record.getTime());
         holder.deleteBtn.setOnClickListener(v -> {
+            // 删除时同步数据库与内存列表，避免界面与数据源不一致。
             scoreDao.deleteRecordById(record.getId());
             records.remove(record);
             notifyDataSetChanged();

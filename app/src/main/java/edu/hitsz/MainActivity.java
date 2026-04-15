@@ -19,6 +19,7 @@ public class MainActivity extends AppCompatActivity {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_main);
 
+        // 持久化音效开关，确保菜单设置与游戏内行为一致。
         soundOn = getSharedPreferences(PREFS_NAME, MODE_PRIVATE).getBoolean(KEY_SOUND_ON, true);
         SwitchCompat soundSwitch = findViewById(R.id.switch_sound);
         soundSwitch.setChecked(soundOn);
@@ -32,6 +33,7 @@ public class MainActivity extends AppCompatActivity {
                     .apply();
         });
 
+        // 主菜单只负责选择难度并传递参数，实际游戏生命周期由 GameActivity 管理。
         findViewById(R.id.btn_easy).setOnClickListener(v -> startGame("easy"));
         findViewById(R.id.btn_medium).setOnClickListener(v -> startGame("medium"));
         findViewById(R.id.btn_hard).setOnClickListener(v -> startGame("hard"));
@@ -42,6 +44,7 @@ public class MainActivity extends AppCompatActivity {
     }
 
     private void startGame(String difficulty) {
+        // 封装启动参数，避免在菜单页耦合游戏细节。
         Intent intent = new Intent(this, GameActivity.class);
         intent.putExtra(GameActivity.EXTRA_DIFFICULTY, difficulty);
         intent.putExtra(GameActivity.EXTRA_SOUND_ON, soundOn);

@@ -29,6 +29,10 @@ public class GameActivity extends AppCompatActivity {
     private AbstractGame gameView;
     private boolean gameOverHandled = false;
     private ScoreDao scoreDao;
+    /**
+     * 接收来自 AbstractGame 绘制线程的游戏结束事件，并切回主线程处理 UI。
+     * 结算弹窗与页面跳转必须在主线程执行。
+     */
     private final Handler gameUiHandler = new Handler(Looper.getMainLooper(), msg -> {
         if (msg.what == AbstractGame.MSG_GAME_OVER) {
             showGameOverDialog(msg.arg1);
@@ -41,6 +45,7 @@ public class GameActivity extends AppCompatActivity {
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
 
+        // 依赖资源的模块统一用 Application Context 初始化，避免持有 Activity。
         ImageManager.init(getApplicationContext());
         SoundManager.init(getApplicationContext());
 
@@ -56,6 +61,7 @@ public class GameActivity extends AppCompatActivity {
         SoundManager.setSoundOn(soundOn);
         scoreDao = new ScoreDaoImpl(this);
 
+        // 按难度创建具体游戏视图，并挂载 UI 回调桥接。
         gameView = Main.createGame(this, difficulty);
         gameView.setUiHandler(gameUiHandler);
         FrameLayout root = new FrameLayout(this);
@@ -67,6 +73,7 @@ public class GameActivity extends AppCompatActivity {
     }
 
     private void showGameOverDialog(int finalScore) {
+        // 防止并发回调或生命周期竞争导致重复弹窗。
         if (gameOverHandled || isFinishing() || isDestroyed()) {
             return;
         }
@@ -93,6 +100,7 @@ public class GameActivity extends AppCompatActivity {
                         Toast.makeText(this, "玩家名已存在，请换一个名字", Toast.LENGTH_SHORT).show();
                         return;
                     }
+                    // 先校验昵称唯一性，再保存成绩并跳转排行榜。
                     saveScoreAndOpenRank(playerName, finalScore);
                     dialog.dismiss();
                 }));
@@ -100,6 +108,7 @@ public class GameActivity extends AppCompatActivity {
     }
 
     private void saveScoreAndOpenRank(String playerName, int finalScore) {
+        // 数据库写入放在 Activity 侧执行，避免渲染线程承担 I/O。
         scoreDao.addRecord(new ScoreRecord(playerName, finalScore));
         startActivity(new Intent(this, RankActivity.class));
         finish();

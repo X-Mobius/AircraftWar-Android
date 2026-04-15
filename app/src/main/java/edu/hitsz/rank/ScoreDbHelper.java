@@ -21,6 +21,7 @@ public class ScoreDbHelper extends SQLiteOpenHelper {
 
     @Override
     public void onCreate(SQLiteDatabase db) {
+        // 排行榜 SQLite 表结构：id 为主键，name/score/time 为展示字段。
         String createSql = "CREATE TABLE IF NOT EXISTS " + TABLE_SCORE + " ("
                 + COL_ID + " INTEGER PRIMARY KEY AUTOINCREMENT, "
                 + COL_PLAYER_NAME + " TEXT NOT NULL, "
@@ -32,6 +33,7 @@ public class ScoreDbHelper extends SQLiteOpenHelper {
 
     @Override
     public void onUpgrade(SQLiteDatabase db, int oldVersion, int newVersion) {
+        // 当前实验阶段采用直接重建表的升级策略。
         db.execSQL("DROP TABLE IF EXISTS " + TABLE_SCORE);
         onCreate(db);
     }
