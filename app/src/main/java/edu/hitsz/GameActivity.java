@@ -16,6 +16,8 @@ import android.widget.Toast;
 import androidx.appcompat.app.AlertDialog;
 import androidx.appcompat.app.AppCompatActivity;
 
+import java.util.concurrent.atomic.AtomicBoolean;
+
 import edu.hitsz.application.AbstractGame;
 import edu.hitsz.application.ImageManager;
 import edu.hitsz.application.Main;
@@ -36,10 +38,7 @@ public class GameActivity extends AppCompatActivity {
 
     private AbstractGame gameView;
     private ScoreDao scoreDao;
-    /**
-     * 联机对战状态：
-     * localFinalScore >= 0 表示本地已死亡并进入结算流程。
-     */
+
     private boolean finalResultHandled = false;
     private boolean onlineMode = false;
     private boolean remoteDead = false;
@@ -49,9 +48,12 @@ public class GameActivity extends AppCompatActivity {
     private int remoteFinalScore = -1;
     private int lastSyncedScore = Integer.MIN_VALUE;
     private String playerId = "player";
+
     private TextView onlineScoreView;
     private AlertDialog waitingDialog;
     private ScoreSyncClient scoreSyncClient;
+    private final AtomicBoolean saveInProgress = new AtomicBoolean(false);
+
     private final Handler scoreSyncHandler = new Handler(Looper.getMainLooper());
     private final Runnable scoreSyncTask = new Runnable() {
         @Override
@@ -68,6 +70,7 @@ public class GameActivity extends AppCompatActivity {
             scoreSyncHandler.postDelayed(this, 250L);
         }
     };
+
     private final Handler gameUiHandler = new Handler(Looper.getMainLooper(), msg -> {
         if (msg.what == AbstractGame.MSG_GAME_OVER) {
             onLocalGameOver(msg.arg1);
@@ -80,7 +83,6 @@ public class GameActivity extends AppCompatActivity {
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
 
-        // 依赖资源的模块统一用 Application Context 初始化，避免持有 Activity。
         ImageManager.init(getApplicationContext());
         SoundManager.init(getApplicationContext());
 
@@ -88,40 +90,47 @@ public class GameActivity extends AppCompatActivity {
         boolean soundOn = true;
         String serverHost = "10.0.2.2";
         int serverPort = 9999;
+
         if (getIntent() != null) {
             String extra = getIntent().getStringExtra(EXTRA_DIFFICULTY);
-            if (extra != null && !extra.trim().isEmpty()) {
+            if (!TextUtils.isEmpty(extra)) {
                 difficulty = extra;
             }
             soundOn = getIntent().getBooleanExtra(EXTRA_SOUND_ON, true);
             onlineMode = getIntent().getBooleanExtra(EXTRA_ONLINE_MODE, false);
+
             String extraHost = getIntent().getStringExtra(EXTRA_SERVER_HOST);
             if (!TextUtils.isEmpty(extraHost)) {
                 serverHost = extraHost.trim();
             }
             serverPort = getIntent().getIntExtra(EXTRA_SERVER_PORT, 9999);
+
             String extraPlayerId = getIntent().getStringExtra(EXTRA_PLAYER_ID);
             if (!TextUtils.isEmpty(extraPlayerId)) {
                 playerId = extraPlayerId.trim();
             }
         }
-        SoundManager.setSoundOn(soundOn);
-        scoreDao = new ScoreDaoImpl(this);
+
         if (TextUtils.isEmpty(playerId)) {
             playerId = buildDefaultPlayerId();
         }
 
-        // 按难度创建具体游戏视图，并挂载 UI 回调桥接。
+        SoundManager.setSoundOn(soundOn);
+        scoreDao = new ScoreDaoImpl(this);
+
         gameView = Main.createGame(this, difficulty);
         gameView.setUiHandler(gameUiHandler);
+
         FrameLayout root = new FrameLayout(this);
         root.addView(gameView, new FrameLayout.LayoutParams(
                 ViewGroup.LayoutParams.MATCH_PARENT,
                 ViewGroup.LayoutParams.MATCH_PARENT
         ));
+
         if (onlineMode) {
             attachOnlineScoreView(root);
         }
+
         setContentView(root);
 
         if (onlineMode) {
@@ -133,7 +142,9 @@ public class GameActivity extends AppCompatActivity {
         if (finalResultHandled || isFinishing() || isDestroyed()) {
             return;
         }
+
         localFinalScore = finalScore;
+
         if (!onlineMode) {
             showSinglePlayerGameOverDialog(finalScore);
             return;
@@ -142,6 +153,7 @@ public class GameActivity extends AppCompatActivity {
         if (scoreSyncClient != null) {
             scoreSyncClient.sendDead(finalScore);
         }
+
         if (remoteDead || peerDisconnected) {
             dismissWaitingDialog();
             showOnlineResultDialog();
@@ -170,18 +182,13 @@ public class GameActivity extends AppCompatActivity {
                 .create();
 
         dialog.setOnShowListener(d -> dialog.getButton(AlertDialog.BUTTON_POSITIVE).setOnClickListener(v -> {
-                    String playerName = input.getText() == null ? "" : input.getText().toString().trim();
-                    if (TextUtils.isEmpty(playerName)) {
-                        playerName = "Player";
-                    }
-                    if (scoreDao.existsPlayerName(playerName)) {
-                        Toast.makeText(this, "玩家名已存在，请换一个名字", Toast.LENGTH_SHORT).show();
-                        return;
-                    }
-                    // 先校验昵称唯一性，再保存成绩并跳转排行榜。
-                    saveScoreAndOpenRank(playerName, finalScore);
-                    dialog.dismiss();
-                }));
+            String playerName = input.getText() == null ? "" : input.getText().toString().trim();
+            if (TextUtils.isEmpty(playerName)) {
+                playerName = "Player";
+            }
+            saveScoreAndOpenRank(playerName, finalScore, dialog);
+        }));
+
         dialog.show();
     }
 
@@ -190,10 +197,17 @@ public class GameActivity extends AppCompatActivity {
             return;
         }
         finalResultHandled = true;
+
         int myScore = Math.max(0, localFinalScore);
         int peerScore = remoteDead ? remoteFinalScore : remoteScore;
-        String peerInfo = remoteDead ? String.valueOf(peerScore) : (peerDisconnected ? "N/A (disconnected)" : String.valueOf(peerScore));
+        String peerInfo = remoteDead
+                ? String.valueOf(peerScore)
+                : (peerDisconnected ? "N/A (disconnected)" : String.valueOf(peerScore));
         String result = calcResult(myScore, peerScore, remoteDead);
+
+        if (scoreSyncClient != null) {
+            scoreSyncClient.close();
+        }
 
         EditText input = new EditText(this);
         input.setHint(R.string.game_over_input_hint);
@@ -217,13 +231,9 @@ public class GameActivity extends AppCompatActivity {
             if (TextUtils.isEmpty(playerName)) {
                 playerName = "Player";
             }
-            if (scoreDao.existsPlayerName(playerName)) {
-                Toast.makeText(this, "玩家名已存在，请换一个名字", Toast.LENGTH_SHORT).show();
-                return;
-            }
-            saveScoreAndOpenRank(playerName, myScore);
-            dialog.dismiss();
+            saveScoreAndOpenRank(playerName, myScore, dialog);
         }));
+
         dialog.show();
     }
 
@@ -265,6 +275,7 @@ public class GameActivity extends AppCompatActivity {
         onlineScoreView.setTextColor(Color.WHITE);
         onlineScoreView.setBackgroundColor(0x55000000);
         onlineScoreView.setPadding(24, 18, 24, 18);
+
         FrameLayout.LayoutParams params = new FrameLayout.LayoutParams(
                 ViewGroup.LayoutParams.WRAP_CONTENT,
                 ViewGroup.LayoutParams.WRAP_CONTENT
@@ -273,6 +284,7 @@ public class GameActivity extends AppCompatActivity {
         params.topMargin = 24;
         params.rightMargin = 24;
         root.addView(onlineScoreView, params);
+
         updateOnlineScoreView(0);
     }
 
@@ -280,23 +292,23 @@ public class GameActivity extends AppCompatActivity {
         scoreSyncClient = new ScoreSyncClient(host, port, myPlayerId, new ScoreSyncClient.Listener() {
             @Override
             public void onConnected() {
-                runOnUiThread(() -> Toast.makeText(GameActivity.this, "Connected to battle server", Toast.LENGTH_SHORT).show());
+                runOnUiThread(() -> Toast.makeText(GameActivity.this,
+                        "Connected to battle server", Toast.LENGTH_SHORT).show());
             }
 
             @Override
             public void onDisconnected(String reason) {
                 runOnUiThread(() -> {
-                    if (isFinishing() || isDestroyed()) {
-                        return;
-                    }
-                    if (finalResultHandled) {
+                    if (isFinishing() || isDestroyed() || finalResultHandled) {
                         return;
                     }
                     peerDisconnected = true;
                     if (!TextUtils.isEmpty(reason)) {
-                        Toast.makeText(GameActivity.this, "Connection closed: " + reason, Toast.LENGTH_SHORT).show();
+                        Toast.makeText(GameActivity.this,
+                                "Connection closed: " + reason,
+                                Toast.LENGTH_SHORT).show();
                     }
-                    if (localFinalScore >= 0 && !finalResultHandled) {
+                    if (localFinalScore >= 0) {
                         dismissWaitingDialog();
                         showOnlineResultDialog();
                     }
@@ -310,20 +322,27 @@ public class GameActivity extends AppCompatActivity {
                     if (isDead) {
                         remoteDead = true;
                         remoteFinalScore = score;
-                        Toast.makeText(GameActivity.this, "Opponent eliminated, final score: " + score, Toast.LENGTH_SHORT).show();
+                        Toast.makeText(GameActivity.this,
+                                "Opponent eliminated, final score: " + score,
+                                Toast.LENGTH_SHORT).show();
                         if (localFinalScore >= 0 && !finalResultHandled) {
                             dismissWaitingDialog();
                             showOnlineResultDialog();
+                            return;
                         }
                     }
-                    int localScore = localFinalScore >= 0 ? localFinalScore : (gameView == null ? 0 : gameView.getScore());
+                    int localScore = localFinalScore >= 0
+                            ? localFinalScore
+                            : (gameView == null ? 0 : gameView.getScore());
                     updateOnlineScoreView(localScore);
                 });
             }
 
             @Override
             public void onError(String error) {
-                runOnUiThread(() -> Toast.makeText(GameActivity.this, "Network error: " + error, Toast.LENGTH_SHORT).show());
+                runOnUiThread(() -> Toast.makeText(GameActivity.this,
+                        "Network error: " + error,
+                        Toast.LENGTH_SHORT).show());
             }
         });
 
@@ -345,14 +364,64 @@ public class GameActivity extends AppCompatActivity {
         return "player-" + (System.currentTimeMillis() % 10000);
     }
 
-    private void saveScoreAndOpenRank(String playerName, int finalScore) {
-        // 数据库写入放在 Activity 侧执行，避免渲染线程承担 I/O。
-        scoreDao.addRecord(new ScoreRecord(playerName, finalScore));
-        if (scoreSyncClient != null) {
-            scoreSyncClient.close();
+    private void saveScoreAndOpenRank(String playerName, int finalScore, AlertDialog dialog) {
+        if (!saveInProgress.compareAndSet(false, true)) {
+            return;
         }
-        startActivity(new Intent(this, RankActivity.class));
-        finish();
+
+        if (dialog != null) {
+            dialog.getButton(AlertDialog.BUTTON_POSITIVE).setEnabled(false);
+        }
+
+        String normalizedName = TextUtils.isEmpty(playerName) ? "Player" : playerName.trim();
+
+        Thread saveThread = new Thread(() -> {
+            try {
+                if (scoreDao.existsPlayerName(normalizedName)) {
+                    runOnUiThread(() -> {
+                        saveInProgress.set(false);
+                        if (isFinishing() || isDestroyed()) {
+                            return;
+                        }
+                        Toast.makeText(GameActivity.this,
+                                "Name already exists. Please choose another one.",
+                                Toast.LENGTH_SHORT).show();
+                        if (dialog != null && dialog.isShowing()) {
+                            dialog.getButton(AlertDialog.BUTTON_POSITIVE).setEnabled(true);
+                        }
+                    });
+                    return;
+                }
+
+                scoreDao.addRecord(new ScoreRecord(normalizedName, finalScore));
+
+                runOnUiThread(() -> {
+                    saveInProgress.set(false);
+                    if (isFinishing() || isDestroyed()) {
+                        return;
+                    }
+                    if (dialog != null && dialog.isShowing()) {
+                        dialog.dismiss();
+                    }
+                    startActivity(new Intent(GameActivity.this, RankActivity.class));
+                    finish();
+                });
+            } catch (Exception e) {
+                runOnUiThread(() -> {
+                    saveInProgress.set(false);
+                    if (isFinishing() || isDestroyed()) {
+                        return;
+                    }
+                    Toast.makeText(GameActivity.this,
+                            "Save failed. Please try again.",
+                            Toast.LENGTH_SHORT).show();
+                    if (dialog != null && dialog.isShowing()) {
+                        dialog.getButton(AlertDialog.BUTTON_POSITIVE).setEnabled(true);
+                    }
+                });
+            }
+        }, "save-score-thread");
+        saveThread.start();
     }
 
     @Override

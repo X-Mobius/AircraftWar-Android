@@ -37,6 +37,7 @@ public class ScoreSyncClient {
     private final Listener listener;
 
     private final AtomicBoolean running = new AtomicBoolean(false);
+    private final AtomicBoolean closing = new AtomicBoolean(false);
     private final ExecutorService sendExecutor = Executors.newSingleThreadExecutor();
 
     private Socket socket;
@@ -82,7 +83,7 @@ public class ScoreSyncClient {
                 listener.onError(e.getMessage() == null ? "network error" : e.getMessage());
             }
         } finally {
-            closeInternal("connection closed");
+            closeInternal("connection closed", true);
         }
     }
 
@@ -135,12 +136,27 @@ public class ScoreSyncClient {
     }
 
     public void close() {
-        closeInternal("closed by client");
+        if (!closing.compareAndSet(false, true)) {
+            return;
+        }
+        Thread closeThread = new Thread(() -> closeInternal("closed by client", false), "score-sync-close");
+        closeThread.start();
     }
 
-    private void closeInternal(String reason) {
+    private void closeInternal(String reason, boolean notifyDisconnected) {
         synchronized (closeLock) {
             running.set(false);
+            Socket currentSocket = socket;
+            socket = null;
+
+            try {
+                if (currentSocket != null && !currentSocket.isClosed()) {
+                    currentSocket.close();
+                }
+            } catch (IOException ignored) {
+                // no-op
+            }
+
             try {
                 if (reader != null) {
                     reader.close();
@@ -148,18 +164,17 @@ public class ScoreSyncClient {
             } catch (IOException ignored) {
                 // no-op
             }
+
             if (writer != null) {
-                writer.close();
-            }
-            try {
-                if (socket != null && !socket.isClosed()) {
-                    socket.close();
+                try {
+                    writer.close();
+                } catch (Exception ignored) {
+                    // no-op
                 }
-            } catch (IOException ignored) {
-                // no-op
             }
+
             sendExecutor.shutdownNow();
-            if (!disconnectedNotified && listener != null) {
+            if (notifyDisconnected && !disconnectedNotified && listener != null) {
                 disconnectedNotified = true;
                 listener.onDisconnected(reason);
             }
